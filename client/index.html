@@ -1,0 +1,229 @@
+<html>
+<head>
+	<title></title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<script src="https://fb.me/react-0.14.0.js"></script>
+	<script src="https://fb.me/react-dom-0.14.0.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.25/browser.min.js"></script>
+
+	<style>
+		body{margin-top:30px;}
+		.label{margin-right:10px;}
+		.repoItem{background: #f9f9f9; border:#f4f4f4 1px solid; padding:10px 10px; border-radius:5px; margin-bottom: 10px;}
+		.form-control{width:450px !important; margin-right: 10px; }
+		form{text-align:center; margin-bottom: 35px; background:#f4f4f4; padding:20px 10px;}
+	</style>
+</head>	
+<body>
+	<div class="container">
+		<div class="row">
+				<div class="col-md-8 col-md-offset-2">
+						<div id="geethub-profile">
+							
+						</div>
+				</div>
+		</div>
+	</div>
+	<script type="text/babel">
+
+
+		var Profile = React.createClass({
+
+			handleFormSubmit: function(username){
+				this.setStare({username: username},function(){
+				this.loadUserData();
+				this.loadRepoData();
+			});
+		},
+
+			getDefaultProps: function(){
+				return{
+					clientId:'63aa21e15f80cc9302ee',
+					clientSecret:'b0df26f6a391766095d25a145a73f9c9acbfc048',
+					urls:{
+					user: 'https://api.github.com/users'
+					},
+					perPage:5
+					 }
+			},
+			getInitialState: function(){
+				return{
+					username: null,
+					userData: [],
+					repoData: []
+					}
+    		},
+
+    		loadUserData: function(){
+    			$.ajax({
+    			url: this.props.urls.user+'/'+this.state.username+'?client_id='+this.props.clientId+'&client_secret='+this.props.clientSecret,
+    			dataType:'json',
+    			cache:false,
+
+    			success: function(data){
+    				console.log(data);
+    				this.setState({userData: data});
+    			}.bind(this),
+
+    			error: function(xhr, status, err){
+    				this.setState({username: null});
+    				alert(err);
+    			}.bind(this)
+				});
+			},
+			loadRepoData: function(){
+				$.ajax({
+    				url: this.props.urls.user+'/'+this.state.username+'/repos?per_page='+this.props.perPage+'&client_id='+this.props.clientId+'&client_secret='+this.props.clientSecret+'&sort=created',
+    				dataType:'json',
+    				cache:false,
+
+    				success: function(data){
+    					console.log(data);
+    					this.setState({repoData: data});
+    				}.bind(this),
+
+    				error: function(xhr, status, err){
+    					this.setState({username: null});
+    					alert(err);
+    				}.bind(this)
+				});
+
+			},	
+
+
+    		componentDidMount: function(){
+    			this.loadUserData();
+    			this.loadRepoData();
+			},
+		 	render: function(){
+				return(
+				<div>
+					<SearchForm onFormSubmit={this.handleFormSubmit}/>
+					{this.state.username ? <UserInfo userData={this.state.userData}/> : null }
+					{this.state.username ? <Repos repoData={this.state.repoData}/> : null }
+				</div>
+				);
+		 	}
+		});
+
+		var UserInfo = React.createClass({
+		 	render: function(){
+				return(
+				<div>
+					<div className="row">
+						<div className="col-md-4">
+							<img className="thumbnail" style={{width:"100%"}} src={this.props.userData.avatar_url}/>
+						</div>
+						<div className="col-md-8">
+							<h3>{this.props.userData.name}</h3>
+							<a className="btn btn-primary" target="_blank" href={this.props.userData.html_url}>visit the github page</a>
+						</div>
+					</div>
+					<br/>
+					<div className="row">
+						<div className="col-md-12">
+							<span className="label label-primary">
+								{this.props.userData.public_repos} Repos
+							</span>
+							<span className="label label-success">
+								{this.props.userData.public_gists} Gists
+							</span>
+							<span className="label label-info">
+								{this.props.userData.public_followers} Followers
+							</span>
+							<span className="label label-danger">
+								{this.props.userData.public_following} Following
+							</span>
+						</div>
+					</div>
+					<br/>
+					<div className="row">
+						<div classNmae="col-md-12">
+							<ul className="list-group">
+								<li className="list-group-item">
+								<strong>UserName:</strong>	{this.props.userData.login}
+								</li>
+								<li className="list-group-item">
+								<strong>Location:</strong>	{this.props.userData.location}
+								</li>
+								<li className="list-group-item">
+								<strong>Email:</strong>	{this.props.userData.email}
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				);
+		 }
+
+	});
+
+		var Repos = React.createClass({
+		 	render: function(){
+				//console.log(this.props.repoData);
+
+				var repoNodes = this.props.repoData.map(function(repo, index){
+					return(
+						<Repo name={repo.name} description={repo.description} url={repo.html_url} key={index} />
+					);
+			});
+				return(
+				<div>
+					<h2 className="page-header">Latest Repos</h2>
+					{repoNodes}
+
+				</div>
+				);
+		 }
+
+	});
+
+	var Repo = React.createClass({
+		render: function(){
+			return(
+					<div className="repoItem">
+						<h4><a target="_blank" href={this,props.url}>{this.props.name}</a></h4>
+						<p>{this.props.description}</p>
+
+
+					</div>
+				)
+	}
+	});
+
+	var SearchForm = React.createClass({
+		
+		submitForm: function(e){
+		e.preventDefault();
+		var username = this.refs.username.value.trim();
+		if(!username){
+			alert('Please provide a username');
+			return;
+		}
+		this.props.onFormSubmit(username);
+		this.refs.username.value='';
+	},
+
+		render: function(){
+			return(
+					<form onSubmit={this.submitForm} className="form-inline">
+						<div className="form-group">
+							<input type="text" ref="username" className="form-control searchInput" placeholder="Enter Github Username" />
+						<button type="submit" classNmae="btn btn-primary">Submit</button>
+						</div>
+						
+					</form>
+				)
+	}
+	});
+
+	ReactDOM.render(
+		<Profile />,
+		document.getElementById('geethub-profile')
+	);
+
+	</script>
+
+</body>
+</html>
